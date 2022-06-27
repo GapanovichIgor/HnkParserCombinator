@@ -1,0 +1,16 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>netstandard2.0</TargetFramework>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <Compile Include="Utils.fs" />
+        <Compile Include="Tape.fs" />
+        <Compile Include="ParseResult.fs" />
+        <Compile Include="Parser.fs" />
+        <Compile Include="Composition.fs" />
+        <Compile Include="Primitives.fs" />
+    </ItemGroup>
+
+</Project>
