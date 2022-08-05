@@ -9,7 +9,7 @@ type ParseSuccess<'value, 'state> =
 type ParseResult<'value, 'state, 'error> = Result<ParseSuccess<'value, 'state>, 'error>
 
 module ParseResult =
-    let mapValue (f: 'a -> 'b) (r: ParseResult<'a, _, _>): ParseResult<'b, _, _> =
+    let mapValue (f: 'a -> 'b) (r: ParseResult<'a, _, _>) : ParseResult<'b, _, _> =
         match r with
         | Ok ok ->
             { value = f ok.value
