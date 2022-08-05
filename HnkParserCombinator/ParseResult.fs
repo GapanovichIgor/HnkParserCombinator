@@ -17,3 +17,12 @@ module ParseResult =
               length = ok.length }
             |> Ok
         | Error e -> Error e
+
+    let constValue (v: 'b) (r: ParseResult<'a, _, _>) : ParseResult<'b, _, _> =
+        match r with
+        | Ok ok ->
+            { value = v
+              state = ok.state
+              length = ok.length }
+            |> Ok
+        | Error e -> Error e
