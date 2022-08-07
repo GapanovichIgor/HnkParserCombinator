@@ -21,7 +21,7 @@ let inline private updateIndentationLevels state indentationLevels =
 
 let inline parseIndentation
     (blockOpen: 't)
-    (blockItemDelimiter: 't)
+    (newLineDelimiter: 't)
     (blockClose: 't)
     (isWhiteSpace: char -> bool)
     : CharParser< ^s, PrimitiveError<char>, 't list > =
@@ -42,7 +42,7 @@ let inline parseIndentation
                     if newLevel > topLevel then
                         (newLevel :: levStack, blockOpen :: tokens |> List.rev)
                     elif newLevel = topLevel then
-                        (levStack, blockItemDelimiter :: tokens |> List.rev)
+                        (levStack, newLineDelimiter :: tokens |> List.rev)
                     else
                         resolveLevelsAndTokens ls (blockClose :: tokens)
 
@@ -80,7 +80,7 @@ type SimpleParseDocumentSetup<'t> =
     { parseToken : CharParser<State, PrimitiveError<char>, 't>
       blockOpenToken : 't
       blockCloseToken : 't
-      blockItemDelimiter : 't
+      newLineDelimiter : 't
       isWhiteSpace : char -> bool    }
 
 let simpleParseDocument (setup: SimpleParseDocumentSetup<'t>) (tape: Tape<char>) =
@@ -99,7 +99,7 @@ let simpleParseDocument (setup: SimpleParseDocumentSetup<'t>) (tape: Tape<char>)
         |> commitOnSuccess
 
     let parseLineWithTokens =
-        let indentation = parseIndentation setup.blockOpenToken setup.blockItemDelimiter setup.blockCloseToken setup.isWhiteSpace
+        let indentation = parseIndentation setup.blockOpenToken setup.newLineDelimiter setup.blockCloseToken setup.isWhiteSpace
         let lineTokens = oneOrMore (parseToken .>> maybeSkipWhitespace)
 
         indentation .>>. lineTokens
