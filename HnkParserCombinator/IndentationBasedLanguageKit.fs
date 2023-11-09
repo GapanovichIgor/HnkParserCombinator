@@ -81,7 +81,7 @@ type SimpleParseDocumentSetup<'t> =
       blockOpenToken : 't
       blockCloseToken : 't
       newLineDelimiter : 't
-      isWhiteSpace : char -> bool    }
+      isWhiteSpace : char -> bool }
 
 let simpleParseDocument (setup: SimpleParseDocumentSetup<'t>) (tape: Tape<char>) =
     let maybeSkipWhitespace =
