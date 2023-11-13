@@ -1,6 +1,6 @@
-module HnkParserCombinator.Primitives
+module ParserCombinator.Primitives
 
-open HnkParserCombinator.Composition
+open ParserCombinator.Composition
 
 type PrimitiveError<'i> =
     | UnexpectedItem of 'i

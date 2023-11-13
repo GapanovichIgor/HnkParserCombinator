@@ -1,4 +1,4 @@
-module HnkParserCombinator.Composition
+module ParserCombinator.Composition
 
 let inline private combine valueSelector p1 p2 =
     fun (tape: Tape<_>, state) ->

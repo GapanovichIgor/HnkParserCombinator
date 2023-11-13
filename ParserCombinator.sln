@@ -1,6 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "HnkParserCombinator", "HnkParserCombinator\HnkParserCombinator.fsproj", "{D9C477C7-6260-4936-82CD-8B0878D52364}"
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "ParserCombinator", "ParserCombinator\ParserCombinator.fsproj", "{D9C477C7-6260-4936-82CD-8B0878D52364}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

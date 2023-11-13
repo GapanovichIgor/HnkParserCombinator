@@ -1,4 +1,4 @@
-namespace HnkParserCombinator
+namespace ParserCombinator
 
 open System
 open Utils

@@ -13,7 +13,6 @@
         <Compile Include="Primitives.fs" />
         <Compile Include="CharParser.fs" />
         <Compile Include="CharPrimitives.fs" />
-        <Compile Include="IndentationBasedLanguageKit.fs" />
     </ItemGroup>
 
 </Project>

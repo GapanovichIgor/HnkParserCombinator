@@ -1,7 +1,7 @@
-module HnkParserCombinator.CharPrimitives
+module ParserCombinator.CharPrimitives
 
 open Composition
-open HnkParserCombinator.Primitives
+open ParserCombinator.Primitives
 
 let constString<'state> (str: string) : Parser<char, 'state, PrimitiveError<char>, unit> =
     if str.Length = 1 then

@@ -1,4 +1,4 @@
-namespace HnkParserCombinator
+namespace ParserCombinator
 
 [<Struct>]
 type ParseSuccess<'value, 'state> =

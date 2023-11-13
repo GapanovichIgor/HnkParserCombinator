@@ -1,4 +1,4 @@
-module internal HnkParserCombinator.Utils
+module internal ParserCombinator.Utils
 
 let inline internal getSubArray startInd length (collection: array<_>) =
     assert (startInd + length <= collection.Length)
