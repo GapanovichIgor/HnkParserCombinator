@@ -1,6 +1,6 @@
 module internal ParserCombinator.Utils
 
-let inline internal getSubArray startInd length (collection: array<_>) =
+let inline getSubArray startInd length (collection: array<_>) =
     assert (startInd + length <= collection.Length)
 
     let result = Array.zeroCreate length
@@ -9,7 +9,3 @@ let inline internal getSubArray startInd length (collection: array<_>) =
         result[i] <- collection.[i + startInd]
 
     result
-
-type Either<'a, 'b> =
-    | Left of 'a
-    | Right of 'b

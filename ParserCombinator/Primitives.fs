@@ -2,25 +2,61 @@ module ParserCombinator.Primitives
 
 open ParserCombinator.Composition
 
-type PrimitiveError<'i> =
-    | UnexpectedItem of 'i
-    | UnexpectedEndOfStream
-
-let oneCond<'i, 's> (cond: 'i -> bool) (tape: Tape<'i>, state: 's) : ParseResult<'i, 's, PrimitiveError<'i>> =
+let oneCond<'i, 's> (conditionDescription: string) (condition: 'i -> bool) (tape: Tape<'i>, state: 's) : ParseResult<'i, 's> =
     tape.MoveNext()
 
     match tape.Current with
-    | Some i ->
-        if cond i then
-            { value = i; state = state; length = 1 } |> Ok
-        else
-            tape.MoveBack(1)
-            Error(UnexpectedItem i)
+    | Some i when condition i -> { value = i; state = state; length = 1 } |> Ok
     | _ ->
         tape.MoveBack(1)
-        Error UnexpectedEndOfStream
 
-let skipAny<'i, 's> (count: int) (tape: Tape<'i>, state: 's) : ParseResult<unit, 's, PrimitiveError<'i>> =
+        { state = state
+          expectedDescription = $"item satisfying the condition: %s{conditionDescription}" }
+        |> Error
+
+let oneOrMoreCond<'i, 's> (conditionDescription: string) (condition: 'i -> bool) (tape: Tape<'i>, state: 's) : ParseResult<'i array, 's> =
+    let rec loop advanceCount =
+        tape.MoveNext()
+        let advanceCount = advanceCount + 1
+
+        match tape.Current with
+        | Some i when condition i -> loop advanceCount
+        | _ ->
+            tape.MoveBack(advanceCount)
+
+            if advanceCount > 1 then
+                let items = tape.Consume(advanceCount - 1)
+
+                { value = items
+                  state = state
+                  length = items.Length }
+                |> Ok
+            else
+                { state = state
+                  expectedDescription = $"one or more items satisfying the condition: %s{conditionDescription}" }
+                |> Error
+
+    loop 0
+
+let zeroOrMoreCond<'i, 's> (condition: 'i -> bool) (tape: Tape<'i>, state: 's) : ParseResult<'i array, 's> =
+    let rec loop advanceCount =
+        tape.MoveNext()
+        let advanceCount = advanceCount + 1
+
+        match tape.Current with
+        | Some i when condition i -> loop advanceCount
+        | _ ->
+            tape.MoveBack(advanceCount)
+            let items = tape.Consume(advanceCount - 1)
+
+            { value = items
+              state = state
+              length = items.Length }
+            |> Ok
+
+    loop 0
+
+let skipAny<'i, 's> (count: int) (tape: Tape<'i>, state: 's) : ParseResult<unit, 's> =
     assert (count > 0)
 
     let rec loop i =
@@ -37,73 +73,30 @@ let skipAny<'i, 's> (count: int) (tape: Tape<'i>, state: 's) : ParseResult<unit,
                 loop i
             else
                 tape.MoveBack(i)
-                Error UnexpectedEndOfStream
+
+                { state = state
+                  expectedDescription = $"any %i{count} items" }
+                |> Error
 
     loop 0
 
-let skipOne<'i, 's when 'i: equality>
-    (item: 'i)
-    (tape: Tape<'i>, state: 's)
-    : ParseResult<unit, 's, PrimitiveError<'i>> =
+let skipOne<'i, 's when 'i: equality> (item: 'i) (tape: Tape<'i>, state: 's) : ParseResult<unit, 's> =
     tape.MoveNext()
 
     match tape.Current with
-    | Some i ->
-        if i = item then
-            { value = ()
-              state = state
-              length = 1 }
-            |> Ok
-        else
-            tape.MoveBack(1)
-            Error(UnexpectedItem i)
-    | None ->
+    | Some i when i = item ->
+        { value = ()
+          state = state
+          length = 1 }
+        |> Ok
+    | _ ->
         tape.MoveBack(1)
-        Error UnexpectedEndOfStream
 
-let tryMapOne (map: 'i -> 'o option) (tape: Tape<'i>, state: 's) : ParseResult<'o, 's, PrimitiveError<'i>> =
-    tape.MoveNext()
+        { state = state
+          expectedDescription = $"item {item}" }
+        |> Error
 
-    match tape.Current with
-    | Some i ->
-        match map i with
-        | Some result ->
-            { value = result
-              state = state
-              length = 1 }
-            |> Ok
-        | None ->
-            tape.MoveBack(1)
-            Error(UnexpectedItem i)
-    | None ->
-        tape.MoveBack(1)
-        Error UnexpectedEndOfStream
-
-let zeroOrMoreCond<'i, 's>
-    (cond: 'i -> bool)
-    (tape: Tape<'i>, state: 's)
-    : ParseResult<'i array, 's, PrimitiveError<'i>> =
-    let rec loop advanceCount =
-        tape.MoveNext()
-        let advanceCount = advanceCount + 1
-
-        match tape.Current with
-        | Some i when cond i -> loop advanceCount
-        | _ ->
-            tape.MoveBack(advanceCount)
-            let items = tape.Consume(advanceCount - 1)
-
-            { value = items
-              state = state
-              length = items.Length }
-            |> Ok
-
-    loop 0
-
-let skipZeroOrMoreCond<'i, 's>
-    (pred: 'i -> bool)
-    (tape: Tape<'i>, state: 's)
-    : ParseResult<unit, 's, PrimitiveError<'i>> =
+let skipZeroOrMoreCond<'i, 's> (pred: 'i -> bool) (tape: Tape<'i>, state: 's) : ParseResult<unit, 's> =
     let rec loop advanceCount =
         tape.MoveNext()
         let advanceCount = advanceCount + 1
@@ -120,39 +113,5 @@ let skipZeroOrMoreCond<'i, 's>
 
     loop 0
 
-let oneOrMoreCond<'i, 's>
-    (cond: 'i -> bool)
-    (tape: Tape<'i>, state: 's)
-    : ParseResult<'i array, 's, PrimitiveError<'i>> =
-    let rec loop advanceCount =
-        tape.MoveNext()
-        let advanceCount = advanceCount + 1
-
-        let stop e =
-            tape.MoveBack(advanceCount)
-
-            if advanceCount > 1 then
-                let items = tape.Consume(advanceCount - 1)
-
-                { value = items
-                  state = state
-                  length = items.Length }
-                |> Ok
-            else
-                Error e
-
-        match tape.Current with
-        | Some i ->
-            if cond i then
-                loop advanceCount
-            else
-                stop (UnexpectedItem i)
-        | None -> stop UnexpectedEndOfStream
-
-    loop 0
-
-let zeroOrMoreAnyWithTerminator<'i, 's when 'i: equality>
-    (terminator: 'i)
-    : Parser<'i, 's, PrimitiveError<'i>, 'i array> =
-    zeroOrMoreCond ((<>) terminator)
-    .>> skipOne terminator
+let zeroOrMoreAnyWithTerminator<'i, 's when 'i: equality> (terminator: 'i) : Parser<'i, 's, 'i array> =
+    zeroOrMoreCond ((<>) terminator) .>> skipOne terminator
