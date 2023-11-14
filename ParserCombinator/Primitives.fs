@@ -4,17 +4,26 @@ open ParserCombinator.Composition
 
 let oneCond<'i, 's> (conditionDescription: string) (condition: 'i -> bool) (tape: Tape<'i>, state: 's) : ParseResult<'i, 's> =
     tape.MoveNext()
+    let position = tape.Position
 
     match tape.Current with
-    | Some i when condition i -> { value = i; state = state; length = 1 } |> Ok
+    | Some i when condition i ->
+        { value = i
+          state = state
+          position = position
+          length = 1 }
+        |> Ok
     | _ ->
         tape.MoveBack(1)
 
         { state = state
+          position = position
           expectedDescription = $"item satisfying the condition: %s{conditionDescription}" }
         |> Error
 
 let oneOrMoreCond<'i, 's> (conditionDescription: string) (condition: 'i -> bool) (tape: Tape<'i>, state: 's) : ParseResult<'i array, 's> =
+    let position = tape.Position + 1
+
     let rec loop advanceCount =
         tape.MoveNext()
         let advanceCount = advanceCount + 1
@@ -29,16 +38,20 @@ let oneOrMoreCond<'i, 's> (conditionDescription: string) (condition: 'i -> bool)
 
                 { value = items
                   state = state
+                  position = position
                   length = items.Length }
                 |> Ok
             else
                 { state = state
+                  position = position
                   expectedDescription = $"one or more items satisfying the condition: %s{conditionDescription}" }
                 |> Error
 
     loop 0
 
 let zeroOrMoreCond<'i, 's> (condition: 'i -> bool) (tape: Tape<'i>, state: 's) : ParseResult<'i array, 's> =
+    let position = tape.Position + 1
+
     let rec loop advanceCount =
         tape.MoveNext()
         let advanceCount = advanceCount + 1
@@ -51,6 +64,7 @@ let zeroOrMoreCond<'i, 's> (condition: 'i -> bool) (tape: Tape<'i>, state: 's) :
 
             { value = items
               state = state
+              position = position
               length = items.Length }
             |> Ok
 
@@ -59,10 +73,13 @@ let zeroOrMoreCond<'i, 's> (condition: 'i -> bool) (tape: Tape<'i>, state: 's) :
 let skipAny<'i, 's> (count: int) (tape: Tape<'i>, state: 's) : ParseResult<unit, 's> =
     assert (count > 0)
 
+    let position = tape.Position + 1
+
     let rec loop i =
         if i = count then
             { value = ()
               state = state
+              position = position
               length = count }
             |> Ok
         else
@@ -75,6 +92,7 @@ let skipAny<'i, 's> (count: int) (tape: Tape<'i>, state: 's) : ParseResult<unit,
                 tape.MoveBack(i)
 
                 { state = state
+                  position = position
                   expectedDescription = $"any %i{count} items" }
                 |> Error
 
@@ -83,20 +101,26 @@ let skipAny<'i, 's> (count: int) (tape: Tape<'i>, state: 's) : ParseResult<unit,
 let skipOne<'i, 's when 'i: equality> (item: 'i) (tape: Tape<'i>, state: 's) : ParseResult<unit, 's> =
     tape.MoveNext()
 
+    let position = tape.Position
+
     match tape.Current with
     | Some i when i = item ->
         { value = ()
           state = state
+          position = position
           length = 1 }
         |> Ok
     | _ ->
         tape.MoveBack(1)
 
         { state = state
+          position = position
           expectedDescription = $"item {item}" }
         |> Error
 
 let skipZeroOrMoreCond<'i, 's> (pred: 'i -> bool) (tape: Tape<'i>, state: 's) : ParseResult<unit, 's> =
+    let position = tape.Position + 1
+
     let rec loop advanceCount =
         tape.MoveNext()
         let advanceCount = advanceCount + 1
@@ -108,6 +132,7 @@ let skipZeroOrMoreCond<'i, 's> (pred: 'i -> bool) (tape: Tape<'i>, state: 's) : 
 
             { value = ()
               state = state
+              position = position
               length = advanceCount - 1 }
             |> Ok
 

@@ -8,6 +8,7 @@ let inline private combine valueSelector (parser1: Parser<'input, 'state, 'outpu
             | Ok success2 ->
                 { value = valueSelector (success1.value, success2.value)
                   state = success2.state
+                  position = success1.position
                   length = success1.length + success2.length }
                 |> Ok
             | Error error2 ->
@@ -60,11 +61,13 @@ let optional (parser: Parser<'input, 'state, 'output>) : Parser<'input, 'state, 
         | Ok success ->
             { value = Some success.value
               state = success.state
+              position = success.position
               length = success.length }
             |> Ok
-        | Error _ ->
+        | Error error ->
             { value = None
               state = state
+              position = error.position
               length = 0 }
             |> Ok
 
@@ -72,17 +75,26 @@ let zeroOrMore (parser: Parser<'input, 'state, 'output>) : Parser<'input, 'state
     fun (tape, state) ->
         let mutable keepGoing = true
         let mutable state = state
+        let mutable position = None
 
         let results =
             [ while keepGoing do
                   match parser (tape, state) with
-                  | Ok o ->
-                      yield o
-                      state <- o.state
-                  | Error _ -> keepGoing <- false ]
+                  | Ok success ->
+                      if position = None then
+                          position <- Some success.position
+
+                      yield success
+                      state <- success.state
+                  | Error error ->
+                      if position = None then
+                          position <- Some error.position
+
+                      keepGoing <- false ]
 
         { value = results |> List.map (fun s -> s.value)
           state = state
+          position = position |> Option.get
           length = results |> List.sumBy (fun s -> s.length) }
         |> Ok
 
@@ -92,11 +104,15 @@ let zeroOrMoreDelimited (delimiter: Parser<'input, 'state, _>) (parser: Parser<'
         let mutable moreRequired = false
         let mutable error = None
         let mutable state = state
+        let mutable position = None
 
         let results =
             [ while keepGoing do
                   match parser (tape, state) with
                   | Ok success ->
+                      if position = None then
+                          position <- Some success.position
+
                       yield success
                       state <- success.state
 
@@ -106,6 +122,9 @@ let zeroOrMoreDelimited (delimiter: Parser<'input, 'state, _>) (parser: Parser<'
                           state <- success.state
                       | _ -> keepGoing <- false
                   | Error e ->
+                      if position = None then
+                          position <- Some e.position
+
                       if moreRequired then
                           error <- Some e ]
 
@@ -114,6 +133,7 @@ let zeroOrMoreDelimited (delimiter: Parser<'input, 'state, _>) (parser: Parser<'
         | None ->
             { value = results |> List.map (fun s -> s.value)
               state = state
+              position = position |> Option.get
               length = results |> List.sumBy (fun s -> s.length) }
             |> Ok
 
@@ -136,6 +156,7 @@ let oneOrMore (parser: Parser<'input, 'state, 'output>) : Parser<'input, 'state,
         if results.Length > 0 then
             { value = results |> List.map (fun s -> s.value)
               state = state
+              position = results[0].position
               length = results |> List.sumBy (fun s -> s.length) }
             |> Ok
         else

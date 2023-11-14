@@ -4,13 +4,14 @@ open System
 open Utils
 
 type Tape<'a>(initialBufferSize, getNext: unit -> 'a option) =
-    let mutable buffer =
-        Array.zeroCreate<'a> initialBufferSize
+    let mutable buffer = Array.zeroCreate<'a> initialBufferSize
 
     let mutable windowStart = 0
     let mutable windowEnd = 0
     let mutable headPos = -1
     let mutable eos = false
+
+    let mutable virtualPosition = headPos
 
     let allocate count =
         assert (count >= 0)
@@ -23,11 +24,9 @@ type Tape<'a>(initialBufferSize, getNext: unit -> 'a option) =
             windowEnd <- windowEnd - windowStart
             windowStart <- 0
         else
-            let newLength =
-                Math.Max(buffer.Length * 2, buffer.Length + count)
+            let newLength = Math.Max(buffer.Length * 2, buffer.Length + count)
 
-            let newBuffer =
-                Array.zeroCreate<'a> newLength
+            let newBuffer = Array.zeroCreate<'a> newLength
 
             Array.Copy(buffer, windowStart, newBuffer, 0, windowLength)
             buffer <- newBuffer
@@ -38,8 +37,7 @@ type Tape<'a>(initialBufferSize, getNext: unit -> 'a option) =
         if eos then
             0
         else
-            let bufferLengthIncrease =
-                windowEnd + count - buffer.Length
+            let bufferLengthIncrease = windowEnd + count - buffer.Length
 
             if bufferLengthIncrease > 0 then
                 allocate bufferLengthIncrease
@@ -56,13 +54,13 @@ type Tape<'a>(initialBufferSize, getNext: unit -> 'a option) =
 
             i
 
+    member _.Position = virtualPosition
+
     member _.Current: 'a option =
 
-        let missingItemCount =
-            headPos - windowEnd + 1
+        let missingItemCount = headPos - windowEnd + 1
 
-        if missingItemCount > 0
-           && tryRead missingItemCount <> missingItemCount then
+        if missingItemCount > 0 && tryRead missingItemCount <> missingItemCount then
             None
         else
             assert (headPos >= windowStart)
@@ -72,21 +70,23 @@ type Tape<'a>(initialBufferSize, getNext: unit -> 'a option) =
     member _.MoveForward(count) : unit =
         assert (count >= 0)
         headPos <- headPos + count
+        virtualPosition <- virtualPosition + count
 
     member this.MoveNext() : unit = this.MoveForward(1)
 
     member _.MoveBack(count) =
         assert (count >= 0)
         headPos <- headPos - count
+        virtualPosition <- virtualPosition - count
         assert (headPos >= windowStart - 1)
 
     member _.Consume(count) : 'a array =
         assert (count >= 0)
 
-        let result =
-            buffer |> getSubArray (headPos + 1) count
+        let result = buffer |> getSubArray (headPos + 1) count
 
         headPos <- headPos + count
+        virtualPosition <- virtualPosition + count
         assert (headPos <= windowEnd)
 
         result

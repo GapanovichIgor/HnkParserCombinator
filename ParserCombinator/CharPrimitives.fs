@@ -10,5 +10,4 @@ let constString<'state> (str: string) : Parser<char, 'state, unit> =
         else
             str |> Seq.map skipOne |> Seq.reduce (>>.)
 
-    parser
-    >> ParseResult.mapErrorDescription (fun _ -> $"string '%s{str}'")
+    parser >> ParseResult.mapErrorDescription (fun _ -> $"string '%s{str}'")

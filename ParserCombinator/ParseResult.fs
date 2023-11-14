@@ -4,10 +4,12 @@ namespace ParserCombinator
 type ParseSuccess<'value, 'state> =
     { value: 'value
       state: 'state
+      position: int
       length: int }
 
 type ParseError<'state> =
     { state: 'state
+      position: int
       expectedDescription: string }
 
 type ParseResult<'value, 'state> = Result<ParseSuccess<'value, 'state>, ParseError<'state>>
@@ -18,6 +20,7 @@ module ParseResult =
         | Ok success ->
             { value = f success.value
               state = success.state
+              position = success.position
               length = success.length }
             |> Ok
         | Error error -> Error error
@@ -27,6 +30,7 @@ module ParseResult =
         | Ok success ->
             { value = value
               state = success.state
+              position = success.position
               length = success.length }
             |> Ok
         | Error e -> Error e
@@ -36,5 +40,6 @@ module ParseResult =
         | Ok success -> Ok success
         | Error error ->
             { state = error.state
+              position = error.position
               expectedDescription = f error.expectedDescription }
             |> Error
