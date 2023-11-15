@@ -25,6 +25,16 @@ module ParseResult =
             |> Ok
         | Error error -> Error error
 
+    let mapSuccess (f: ParseSuccess<'a, 's> -> 'b) (result: ParseResult<'a, 's>): ParseResult<'b, 's> =
+        match result with
+        | Ok success ->
+            { value = f success
+              state = success.state
+              position = success.position
+              length = success.length }
+            |> Ok
+        | Error error -> Error error
+
     let constValue (value: 'b) (result: ParseResult<'a, _>) : ParseResult<'b, _> =
         match result with
         | Ok success ->
